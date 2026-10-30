@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>资产管家</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#0d0d0d;--card:#171717;--card2:#202020;--line:#2a2a2a;
+  --text:#f2f0ea;--muted:#9b968a;--dim:#5f5b52;
+  --honey:#ffc53d;--honey2:#e6a800;--green:#4ade80;--red:#ff5c5c}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;padding-bottom:76px}
+input,select,textarea,button{font-family:inherit}
+input,select{background:var(--card2);border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:10px 12px;font-size:.9rem;width:100%;outline:none}
+input:focus,select:focus{border-color:var(--honey)}
+header{position:sticky;top:0;background:rgba(13,13,13,.96);backdrop-filter:blur(14px);
+  padding:16px 16px 12px;z-index:20;border-bottom:1px solid var(--line)}
+header h1{font-size:1.1rem;font-weight:700;color:var(--honey)}
+header .sub{font-size:.66rem;color:var(--dim);margin-top:2px}
+main{padding:14px 16px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px}
+.lbl{font-size:.68rem;color:var(--muted);margin-bottom:6px}
+.big{font-size:1.9rem;font-weight:800;letter-spacing:-.5px}
+.small{font-size:.72rem;color:var(--muted)}
+.honey{color:var(--honey)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+button{cursor:pointer}
+.btn{background:var(--honey);color:#0d0d0d;border:none;border-radius:11px;
+  padding:11px 16px;font-weight:700;font-size:.88rem}
+.btn:active{transform:scale(.97)}
+.btn2{background:var(--card2);color:var(--text);border:1px solid var(--line);
+  border-radius:11px;padding:10px 14px;font-size:.84rem}
+.mini{background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  border-radius:8px;padding:5px 10px;font-size:.72rem}
+/* 底部导航 */
+nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,13,.97);
+  backdrop-filter:blur(16px);border-top:1px solid var(--line);
+  display:flex;padding:7px 0 max(9px, env(safe-area-inset-bottom));z-index:30}
+nav button{flex:1;background:none;border:none;color:var(--dim);font-size:.66rem;display:flex;
+  flex-direction:column;align-items:center;gap:3px;padding:4px 0}
+nav button .ic{font-size:1.25rem;line-height:1}
+nav button.on{color:var(--honey);font-weight:600}
+/* 资产类别滑动 */
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0 10px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--muted);
+  border-radius:20px;padding:8px 15px;font-size:.8rem}
+.tabs button.on{background:var(--honey);border-color:var(--honey);color:#0d0d0d;font-weight:700}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px}
+.item .nm{font-weight:600;font-size:.92rem}
+.item .amt{font-size:1.05rem;font-weight:700;text-align:right}
+.item .meta{display:flex;gap:12px;font-size:.66rem;color:var(--dim);margin-top:5px;flex-wrap:wrap}
+.gain{color:var(--green)}.loss{color:var(--red)}
+.bar{height:6px;border-radius:3px;background:var(--card2);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--honey)}
+.empty{text-align:center;color:var(--dim);padding:36px 0;font-size:.85rem}
+.fab{position:fixed;right:18px;bottom:84px;width:54px;height:54px;border-radius:50%;
+  background:var(--honey);color:#0d0d0d;border:none;font-size:1.6rem;font-weight:700;
+  box-shadow:0 6px 20px rgba(255,197,61,.35);z-index:25}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:none;
+  align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{background:var(--card);width:100%;max-width:640px;max-height:88vh;overflow-y:auto;
+  border-radius:20px 20px 0 0;padding:18px 18px 28px}
+.sheet h3{font-size:1rem;margin-bottom:14px;color:var(--honey)}
+.field{margin-bottom:12px}
+.field .fl{font-size:.7rem;color:var(--muted);margin-bottom:5px}
+.tag{display:inline-block;font-size:.58rem;padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:1px}
+.t-out{background:rgba(255,92,92,.15);color:var(--red)}
+.t-in{background:rgba(74,222,128,.15);color:var(--green)}
+.plan-row{display:flex;justify-content:space-between;font-size:.74rem;padding:7px 0;
+  border-bottom:1px solid var(--line);gap:6px}
+.chip{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:8px;
+  padding:4px 9px;font-size:.68rem;color:var(--muted);margin:2px 4px 2px 0}
+.lock{position:fixed;inset:0;background:var(--bg);z-index:99;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.lock.show{display:flex}
+.lock input{width:200px;text-align:center;letter-spacing:8px;font-size:1.4rem}
+</style>
+</head>
+<body>
+<header><div class="row">
+  <div><h1 id="hTitle">🏠 资产管家</h1><div class="sub" id="hSub">数据只存本机 · 加到主屏幕即成 App</div></div>
+  <button class="mini" id="btnFx">汇率</button>
+</div></header>
+<main id="main"></main>
+
+<nav id="nav">
+  <button data-t="home" class="on"><span class="ic">📊</span>总览</button>
+  <button data-t="assets"><span class="ic">🗂</span>资产</button>
+  <button data-t="loans"><span class="ic">🤝</span>借贷</button>
+  <button data-t="stats"><span class="ic">📈</span>分析</button>
+  <button data-t="set"><span class="ic">⚙️</span>设置</button>
+</nav>
+<button class="fab" id="fab">＋</button>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="lock" id="lock"><div style="font-size:2rem">🔒</div>
+  <div style="color:var(--muted);font-size:.85rem" id="lockTip">输入应用锁密码</div>
+  <input type="password" id="lockPwd" inputmode="numeric">
+  <button class="btn" id="lockGo" style="width:200px">解锁</button></div>
+
+<script>
+/* ================= 数据层 ================= */
+const DB_KEY='asset_manager_v1';
+let db=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(DB_KEY));
+  if(d)return d;}catch(e){}
+  return {items:[],loans:[],set:{fx:{USD:7.12,HKD:0.915,auto:true},lock:''}}}
+function save(){localStorage.setItem(DB_KEY,JSON.stringify(db));render()}
+
+const CATS=[
+ {k:'stock',n:'股票',ic:'📈',profit:true},
+ {k:'gold',n:'黄金白银',ic:'🥇',profit:true},
+ {k:'house',n:'房子车子',ic:'🏠',profit:false},
+ {k:'cash',n:'现金账户',ic:'💰',profit:false},
+ {k:'recv',n:'应收款',ic:'📥',profit:false},
+ {k:'other',n:'其它资产',ic:'🎨',profit:false},
+ {k:'debt',n:'负债应付',ic:'💳',liab:true},
+];
+const CUR={CNY:1,USD:'fxUSD',HKD:'fxHKD'};
+function fx(){return db.set.fx||{USD:7.12,HKD:0.915,auto:true}}
+function toCNY(amt,cur){const f=fx();if(cur==='USD')return amt*(f.USD||7.12);
+  if(cur==='HKD')return amt*(f.HKD||0.915);return amt}
+function fmt(n){return (n||0).toLocaleString('zh-CN',{maximumFractionDigits:2})}
+function wan(n){n=n||0;return n>=1e4?(n/1e4).toFixed(2)+'万':fmt(n)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+const $=s=>document.querySelector(s);
+const esc=s=>(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+/* ================= 资产汇总 ================= */
+function itemCNY(it){
+  const q=Number(it.qty)||0, p=Number(it.priceNow)||0;
+  if(it.cat==='debt')return toCNY(q*p,q==='1'?it.currency:'CNY'); // debt: qty=数量? 简化: 用 amount
+  return toCNY(q*p,it.currency||'CNY');
+}
+function totals(){
+  let assets=0,liab=0;const byCat={},profit={};
+  CATS.forEach(c=>{byCat[c.k]=0;profit[c.k]=0});
+  db.items.forEach(it=>{
+    const q=Number(it.qty)||0,pIn=Number(it.priceIn)||0,pNow=Number(it.priceNow)||0;
+    let v=toCNY(q*pNow,it.currency||'CNY');
+    if(it.cat==='debt'){liab+=v}else{assets+=v}
+    byCat[it.cat]=(byCat[it.cat]||0)+v;
+    if(CATS.find(c=>c.k===it.cat)?.profit)
+      profit[it.cat]+=toCNY(q*(pNow-pIn),it.currency||'CNY');
+  });
+  // 借贷余额计入
+  let loanOut=0,loanIn=0;
+  db.loans.forEach(L=>{const rem=loanRemaining(L);
+    if(L.dir==='out')loanOut+=rem;else loanIn+=rem});
+  assets+=loanOut;liab+=loanIn;
+  byCat['recv']=(byCat['recv']||0)+0; // 已由 items 计，loanOut 另加
+  return {assets,liab,net:assets-liab,
+    ratio:assets>0?liab/assets*100:0,byCat,profit,loanOut,loanIn};
+}
+/* ================= 借贷计算 ================= */
+function loanSchedule(L){
+  // 生成计划: [{due:'YYYY-MM-DD',prin,int,total,balance}]
+  const P=Number(L.principal),n=Number(L.months);
+  const r=(Number(L.rate)||0)/100/12;
+  const start=new Date(L.startDate);
+  const due=i=>{const d=new Date(start);d.setMonth(d.getMonth()+i+1);
+    return d.toISOString().slice(0,10)};
+  const plan=[];let bal=P;
+  if(L.mode==='等额本息'&&r>0){
+    const pay=P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+    for(let i=0;i<n;i++){const int=bal*r;const pr=Math.min(pay-int,bal);
+      bal-=pr;plan.push({due:due(i),prin:pr,int,total:pay,balance:Math.max(bal,0)})}
+  }else if(L.mode==='等额本金'){
+    const pr=P/n;
+    for(let i=0;i<n;i++){const int=bal*r;bal-=pr;
+      plan.push({due:due(i),prin:pr,int,total:pr+int,balance:Math.max(bal,0)})}
+  }else if(L.mode==='先息后本'){
+    for(let i=0;i<n;i++){const int=bal*r;
+      plan.push({due:due(i),prin:i===n-1?bal:0,int,total:int+(i===n-1?bal:0),
+        balance:i===n-1?0:bal})}
+  }else{ // 到期一次性还本付息（单利）
+    const total=P*(1+(Number(L.rate)||0)/100*n/12);
+    plan.push({due:due(n-1),prin:P,int:total-P,total,balance:0});
+  }
+  return plan;
+}
+function loanRemaining(L){
+  const plan=loanSchedule(L);
+  let paidPrin=0;
+  L.payments.forEach(p=>paidPrin+=Number(p.prin)||0);
+  return Math.max(Number(L.principal)-paidPrin,0);
+}
+function loanPaid(L){
+  let t=0;L.payments.forEach(p=>t+=Number(p.amount)||0);return t;
+}
+function loanInterestPaid(L){
+  let t=0;L.payments.forEach(p=>t+=Number(p.int)||0);return t;
+}
+
+/* ================= 渲染 ================= */
+let tab='home', curCat='stock';
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  const m=$('#main');
+  if(tab==='home')m.innerHTML=vHome();
+  else if(tab==='assets')m.innerHTML=vAssets();
+  else if(tab==='loans')m.innerHTML=vLoans();
+  else if(tab==='stats')m.innerHTML=vStats();
+  else m.innerHTML=vSet();
+  bind();
+}
+function vHome(){
+  const t=totals();
+  const cats=CATS.filter(c=>!c.liab);
+  let bars='';
+  const vals=cats.map(c=>({c,v:t.byCat[c.k]||0})).sort((a,b)=>b.v-a.v);
+  const mx=Math.max(...vals.map(x=>x.v),1);
+  vals.forEach(({c,v})=>{if(v<=0)return;
+    bars+=`<div style="margin:10px 0"><div class="row"><span style="font-size:.8rem">${c.ic} ${c.n}</span>
+    <span style="font-size:.8rem;font-weight:600">${wan(v)} 元</span></div>
+    <div class="bar"><i style="width:${v/mx*100}%"></i></div></div>`});
+  if(t.loanOut>0)bars+=`<div style="margin:10px 0"><div class="row"><span style="font-size:.8rem">🤝 借出款（待收）</span>
+    <span style="font-size:.8rem;font-weight:600">${wan(t.loanOut)} 元</span></div>
+    <div class="bar"><i style="width:${t.loanOut/mx*100}%;background:#4ade80"></i></div></div>`;
+  return `
+  <div class="card"><div class="lbl">净资产（总资产 - 总负债）</div>
+    <div class="big honey">¥ ${fmt(Math.round(t.net))}</div>
+    <div class="row" style="margin-top:12px">
+      <div><div class="small">总资产</div><div style="font-weight:700">¥ ${fmt(Math.round(t.assets))}</div></div>
+      <div><div class="small">总负债</div><div style="font-weight:700;color:var(--red)">¥ ${fmt(Math.round(t.liab))}</div></div>
+      <div><div class="small">负债率</div><div style="font-weight:700">${t.ratio.toFixed(1)}%</div></div>
+    </div></div>
+  <div class="card"><div class="lbl">钱都压在哪</div>${bars||'<div class="empty">还没有资产，去「资产」页添加</div>'}</div>
+  <div class="card"><div class="row"><div>
+    <div class="small">🤝 借出去的钱</div><div style="font-weight:700;color:var(--green)">¥ ${fmt(Math.round(t.loanOut))}</div></div>
+    <div><div class="small">💳 欠别人的钱</div><div style="font-weight:700;color:var(--red)">¥ ${fmt(Math.round(t.loanIn))}</div></div></div></div>`;
+}
+function vAssets(){
+  const c=CATS.find(x=>x.k===curCat);
+  const list=db.items.filter(i=>i.cat===curCat)
+    .sort((a,b)=>itemCNY(b)-itemCNY(a));
+  const t=totals();
+  let sum=t.byCat[curCat]||0;
+  let pf=0;if(c.profit)list.forEach(i=>pf+=toCNY((Number(i.qty))*(Number(i.priceNow)-Number(i.priceIn)),i.currency||'CNY'));
+  const items=list.map(i=>{
+    const v=itemCNY(i);
+    let sub='';
+    if(c.profit){const g=toCNY(Number(i.qty)*(Number(i.priceNow)-Number(i.priceIn)),i.currency||'CNY');
+      sub=`<span class="${g>=0?'gain':'loss'}">${g>=0?'盈':'亏'} ${fmt(Math.abs(Math.round(g)))}</span>`}
+    return `<div class="item"><div class="row">
+      <div><span class="nm">${esc(i.name)}</span>${i.currency&&i.currency!=='CNY'?`<span class="tag t-in">${i.currency}</span>`:''}</div>
+      <div class="amt">¥ ${fmt(Math.round(v))}<div style="font-size:.64rem;color:var(--dim)">现价 ${i.priceNow} × ${i.qty}</div></div></div>
+      <div class="meta"><span>买入价 ${i.priceIn||'-'}</span>${sub}<span>${esc(i.note||'')}</span></div>
+      <div class="row" style="margin-top:8px">
+        <button class="mini" data-edit="${i.id}">编辑</button>
+        <button class="mini" data-del="${i.id}">删除</button></div></div>`}).join('');
+  return `<div class="tabs">${CATS.map(x=>
+    `<button data-cat="${x.k}" class="${x.k===curCat?'on':''}">${x.ic} ${x.n}</button>`).join('')}</div>
+  <div class="card"><div class="row">
+    <div><div class="lbl">${c.ic} ${c.n}合计${c.liab?'（欠款）':''}</div>
+    <div class="big" style="font-size:1.4rem;color:${c.liab?'var(--red)':'var(--honey)'}">¥ ${fmt(Math.round(sum))}</div></div>
+    ${c.profit?`<div style="text-align:right"><div class="small">该类盈亏</div>
+      <div style="font-weight:700" class="${pf>=0?'gain':'loss'}">${pf>=0?'+':''}${fmt(Math.round(pf))}</div></div>`:''}
+  </div></div>
+  ${items||`<div class="empty">点击右下角 ＋ 添加${c.n}记录</div>`}`;
+}
+function vLoans(){
+  const t=totals();
+  const cards=db.loans.map(L=>{
+    const plan=loanSchedule(L);
+    const rem=loanRemaining(L),paid=loanPaid(L);
+    const paidN=L.payments.length;
+    // 进度与逾期
+    let overdue=0;const today=new Date().toISOString().slice(0,10);
+    plan.forEach(p=>{if(p.due<today&&p.balance>0&&!L.payments.some(x=>x.dueIdx===plan.indexOf(p)))overdue++});
+    const dirTag=L.dir==='out'?'<span class="tag t-in">借出</span>':'<span class="tag t-out">借入</span>';
+    const pct=(1-rem/Number(L.principal))*100;
+    return `<div class="card"><div class="row">
+      <div><span class="nm">${esc(L.person)}</span>${dirTag}<div class="small" style="margin-top:3px">
+        本金 ${fmt(L.principal)} · ${L.mode} · 月息 ${L.rate}% · ${L.months}期 · ${L.startDate}起</div></div>
+      <div style="text-align:right"><div class="small">剩余本金</div>
+        <div style="font-weight:800;color:${L.dir==='out'?'var(--green)':'var(--red)'}">¥ ${fmt(Math.round(rem))}</div>
+        <div class="small">已还 ${paidN}/${L.months} 期</div></div></div>
+      <div class="bar" style="margin-top:10px"><i style="width:${pct}%;background:${L.dir==='out'?'var(--green)':'var(--red)'}"></i></div>
+      <div class="row" style="margin-top:9px">
+        <button class="mini" data-loan-detail="${L.id}">还款计划</button>
+        <button class="mini" data-loan-pay="${L.id}" style="color:var(--honey);border-color:var(--honey)">登记还款</button>
+        <button class="mini" data-loan-del="${L.id}">删除</button></div></div>`}).join('');
+  return `<div class="card"><div class="row">
+    <div><div class="lbl">借出待收</div><div class="big" style="font-size:1.3rem;color:var(--green)">¥ ${fmt(Math.round(t.loanOut))}</div></div>
+    <div><div class="lbl">借入待还</div><div class="big" style="font-size:1.3rem;color:var(--red)">¥ ${fmt(Math.round(t.loanIn))}</div></div></div>
+    <div class="small" style="margin-top:8px">共 ${db.loans.length} 笔借贷 · 支持4种还款方式：等额本息 / 等额本金 / 先息后本 / 到期一次性还本付息</div></div>
+  ${cards||'<div class="empty">点击右下角 ＋ 登记一笔借出或借入</div>'}`;
+}
+function vStats(){
+  const t=totals();
+  let rows='';let totalProfit=0;
+  CATS.filter(c=>c.profit).forEach(c=>{
+    const pf=t.profit[c.k]||0;totalProfit+=pf;
+    const list=db.items.filter(i=>i.cat===c.k);
+    let cost=0;list.forEach(i=>cost+=toCNY(Number(i.qty)*Number(i.priceIn),i.currency||'CNY'));
+    const rate=cost>0?pf/cost*100:0;
+    if(list.length)rows+=`<tr><td>${c.ic} ${c.n}</td>
+      <td style="color:${pf>=0?'var(--green)':'var(--red)'};font-weight:700">${pf>=0?'+':''}${fmt(Math.round(pf))}</td>
+      <td>${rate>=0?'+':''}${rate.toFixed(1)}%</td></tr>`});
+  let loanInt=0,loanPen=0;
+  db.loans.forEach(L=>{L.payments.forEach(p=>{loanInt+=Number(p.int)||0;loanPen+=Number(p.penalty)||0})});
+  // 汇总条形
+  const vals=CATS.map(c=>({c,v:t.byCat[c.k]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  const mx=Math.max(...vals.map(x=>x.v),1);
+  let bars=vals.map(({c,v})=>`<div style="margin:9px 0"><div class="row">
+    <span style="font-size:.78rem">${c.ic} ${c.n}</span>
+    <span style="font-size:.78rem">${wan(v)} · ${(t.assets>0?v/(t.assets+t.liab||1)*100:0).toFixed(0)}%</span></div>
+    <div class="bar"><i style="width:${v/mx*100}%;background:${c.liab?'var(--red)':'var(--honey)'}"></i></div></div>`).join('');
+  return `<div class="card"><div class="lbl">投资盈亏（股票+贵金属，按人民币口径）</div>
+    <div class="big" class="${totalProfit>=0?'gain':'loss'}" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">
+    ${totalProfit>=0?'+':''}¥ ${fmt(Math.round(totalProfit))}</div>
+    ${rows?`<table style="width:100%;margin-top:10px;font-size:.78rem"><tr>
+      <th style="text-align:left;color:var(--dim)">类别</th><th style="color:var(--dim)">盈亏</th><th style="color:var(--dim)">收益率</th></tr>${rows}</table>`
+      :'<div class="small" style="margin-top:8px">添加股票或贵金属记录后显示</div>'}</div>
+  <div class="card"><div class="lbl">资产结构（含负债）</div>${bars||'-'}</div>
+  <div class="card"><div class="row">
+    <div><div class="small">已收利息（借出）</div><div style="font-weight:700;color:var(--green)">¥ ${fmt(Math.round(loanInt))}</div></div>
+    <div><div class="small">已收违约金</div><div style="font-weight:700;color:var(--yellow)">¥ ${fmt(Math.round(loanPen))}</div></div></div></div>`;
+}
+function vSet(){
+  const f=fx();
+  return `<div class="card"><h2 style="font-size:.9rem;margin-bottom:10px">💱 汇率（用于美元/港币资产折算）</h2>
+    <div class="grid3">
+      <div><div class="fl">美元 USD</div><input id="fxUSD" type="number" step="0.01" value="${f.USD}"></div>
+      <div><div class="fl">港币 HKD</div><input id="fxHKD" type="number" step="0.001" value="${f.HKD}"></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn2" id="fxAuto" style="width:100%">自动获取</button></div>
+    </div><div class="small" style="margin-top:8px">自动获取使用欧洲央行汇率接口（frankfurter.app）</div></div>
+  <div class="card"><h2 style="font-size:.9rem;margin-bottom:10px">🔒 应用锁</h2>
+    <div class="small" style="margin-bottom:10px">${db.set.lock?'已开启。输入密码后才能进入。':'设置一个数字密码，打开App需先解锁，防止旁人查看。'}</div>
+    <div class="grid2"><input id="lockNew" type="password" inputmode="numeric" placeholder="${db.set.lock?'输入原密码或直接改':'4-8位数字'}">
+    <button class="btn" id="lockSet">保存密码</button></div>
+    ${db.set.lock?'<button class="mini" id="lockOff" style="margin-top:10px">取消应用锁</button>':''}</div>
+  <div class="card"><h2 style="font-size:.9rem;margin-bottom:10px">💾 备份与恢复</h2>
+    <div class="grid2">
+      <button class="btn2" id="exp">导出备份文件</button>
+      <button class="btn2" id="imp">导入备份</button></div>
+    <div class="small" style="margin-top:8px">数据只存在本机浏览器里，清除浏览器数据会丢失，建议定期导出。</div></div>
+  <div class="card"><div class="small">🟡 资产管家 · 纯本地记账 · 无账号无上传<br>
+  数据来源：所有记录保存在手机浏览器 IndexedDB/LocalStorage，只有你自己能看到。</div></div>`;
+}
+
+/* ================= 编辑弹层 ================= */
+function openModal(html){$('#sheet').innerHTML=html;$('#modal').classList.add('show')}
+function closeModal(){$('#modal').classList.remove('show')}
+
+function itemForm(cat,id){
+  const c=CATS.find(x=>x.k===cat);
+  const it=id?db.items.find(x=>x.id===id):null;
+  openModal(`<h3>${c.ic} ${id?'编辑':'添加'}${c.n}</h3>
+  <div class="field"><div class="fl">名称（如：贵州茅台 600519 / 招行储蓄卡 / 金条50g）</div>
+    <input id="fName" value="${esc(it?.name)}" placeholder="名称"></div>
+  <div class="grid2">
+    <div class="field"><div class="fl">数量 / 份额 / 股数</div><input id="fQty" type="number" step="any" value="${it?.qty??''}"></div>
+    <div class="field"><div class="fl">币种</div><select id="fCur">
+      ${['CNY','USD','HKD'].map(x=>`<option ${it?.currency===x?'selected':''}>${x}</option>`).join('')}</select></div></div>
+  <div class="grid2">
+    <div class="field"><div class="fl">买入价 / 成本单价</div><input id="fIn" type="number" step="any" value="${it?.priceIn??''}"></div>
+    <div class="field"><div class="fl">现价 / 当前市值单价</div><input id="fNow" type="number" step="any" value="${it?.priceNow??''}"></div></div>
+  <div class="field"><div class="fl">备注（账户尾号 / 券商 / 存放地）</div><input id="fNote" value="${esc(it?.note)}"></div>
+  <button class="btn" style="width:100%" id="fSave">保存</button>
+  <button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">取消</button>`);
+  $('#fSave').onclick=()=>{
+    const name=$('#fName').value.trim();
+    const qty=Number($('#fQty').value)||0;
+    if(!name||!qty){alert('请填名称和数量');return}
+    const obj={cat,name,qty,currency:$('#fCur').value,
+      priceIn:Number($('#fIn').value)||0,priceNow:Number($('#fNow').value)||qty&&Number($('#fIn').value)||0,
+      note:$('#fNote').value.trim()};
+    if(it)Object.assign(it,obj);
+    else db.items.push({id:uid(),date:new Date().toISOString().slice(0,10),...obj});
+    save();closeModal();
+  };
+}
+function loanForm(){
+  openModal(`<h3>🤝 登记借贷</h3>
+  <div class="field"><div class="fl">方向</div><select id="lDir">
+    <option value="out">我借给别人（应收）</option><option value="in">别人借给我（应付）</option></select></div>
+  <div class="field"><div class="fl">对方姓名 / 名称</div><input id="lPerson" placeholder="如：张三 / XX银行"></div>
+  <div class="grid2">
+    <div class="field"><div class="fl">本金（元）</div><input id="lP" type="number" step="any"></div>
+    <div class="field"><div class="fl">月利率 %（年利率÷12）</div><input id="lR" type="number" step="any" value="0.5"></div></div>
+  <div class="grid2">
+    <div class="field"><div class="fl">期数（月）</div><input id="lN" type="number" value="12"></div>
+    <div class="field"><div class="fl">起借日</div><input id="lS" type="date" value="${new Date().toISOString().slice(0,10)}"></div></div>
+  <div class="field"><div class="fl">还款方式</div><select id="lMode">
+    <option>等额本息</option><option>等额本金</option><option>先息后本</option><option>到期一次性还本付息</option></select></div>
+  <div class="field"><div class="fl">逾期日罚息率 %/天（可选，如 0.05）</div><input id="lPen" type="number" step="any" value="0.05"></div>
+  <button class="btn" style="width:100%" id="lSave">保存并生成还款计划</button>
+  <button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">取消</button>`);
+  $('#lSave').onclick=()=>{
+    const person=$('#lPerson').value.trim(),P=Number($('#lP').value);
+    if(!person||!P){alert('请填姓名和本金');return}
+    db.loans.push({id:uid(),dir:$('#lDir').value,person,principal:P,
+      rate:Number($('#lR').value)||0,months:Number($('#lN').value)||12,
+      startDate:$('#lS').value,mode:$('#lMode').value,
+      penalty:Number($('#lPen').value)||0,payments:[]});
+    save();closeModal();
+  };
+}
+function loanDetail(id){
+  const L=db.loans.find(x=>x.id===id);if(!L)return;
+  const plan=loanSchedule(L);
+  const today=new Date().toISOString().slice(0,10);
+  let rows='',done=0;
+  plan.forEach((p,i)=>{
+    const pay=L.payments.find(x=>x.dueIdx===i);
+    const isPaid=!!pay;
+    if(isPaid)done++;
+    const late=!isPaid&&p.due<today;
+    const days=late?Math.round((new Date(today)-new Date(p.due))/864e5):0;
+    rows+=`<div class="plan-row"><span>${i+1}期 · ${p.due}${late?`<b class="loss"> 逾期${days}天</b>`:''}${isPaid?'<span class="tag t-in">已还</span>':''}</span>
+      <span>本金 ${fmt(Math.round(p.prin))} + 利息 ${fmt(Math.round(p.int))} = <b>${fmt(Math.round(p.total))}</b></span></div>`});
+  const paidRows=L.payments.map((p,i)=>{
+    const dIdx=p.dueIdx!==undefined?`第${p.dueIdx+1}期`:'提前/部分';
+    return `<div class="plan-row"><span>${p.date} · ${dIdx}</span>
+      <span>${p.penalty?`<span class="loss">违约金${fmt(Math.round(p.penalty))}</span> `:''}
+      利息${fmt(Math.round(p.int||0))} + 本金${fmt(Math.round(p.prin||0))} = <b>${fmt(Math.round(p.amount))}</b>
+      <button class="mini" data-pay-del="${i}" data-loan="${L.id}" style="padding:2px 7px">删</button></span></div>`}).join('');
+  openModal(`<h3>还款计划 · ${esc(L.person)}</h3>
+    <div class="small" style="margin-bottom:10px">${L.mode} · 月息 ${L.rate}% · 本金 ${fmt(L.principal)} 元
+    ${L.penalty?` · 逾期罚息 ${L.penalty}%/天`:''}</div>
+    <div class="card" style="margin-bottom:10px;padding:10px 12px">
+    <div class="row"><span class="small">已还 ${done}/${plan.length} 期 · 已收 ${fmt(Math.round(loanPaid(L)))} 元</span>
+    <span class="small">剩余本金 ${fmt(Math.round(loanRemaining(L)))} 元</span></div></div>
+    ${paidRows?`<h3 style="font-size:.85rem">已登记还款（删一笔自动重算）</h3>${paidRows}`:''}
+    <h3 style="font-size:.85rem">全部期数</h3>${rows}
+    <button class="btn" style="width:100%;margin-top:12px" data-loan-pay="${L.id}">＋ 登记一笔还款</button>
+    <button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">关闭</button>`);
+  bind();
+}
+function loanPayForm(id){
+  const L=db.loans.find(x=>x.id===id);if(!L)return;
+  const plan=loanSchedule(L);
+  const today=new Date().toISOString().slice(0,10);
+  let idx=plan.findIndex((p,i)=>!L.payments.some(x=>x.dueIdx===i));
+  if(idx<0)idx=plan.length-1;
+  const p=plan[idx];
+  const daysLate=Math.max(0,Math.round((new Date(today)-new Date(p.due))/864e5));
+  const estPen=daysLate>0&&L.penalty?loanRemaining(L)*(L.penalty/100)*daysLate:0;
+  openModal(`<h3>登记还款 · ${esc(L.person)}</h3>
+    <div class="small" style="margin-bottom:12px;color:var(--honey)">
+    建议冲抵第 ${idx+1} 期（到期日 ${p.due}）${daysLate>0?` · <b class="loss">已逾期 ${daysLate} 天</b>`:''}</div>
+    <div class="card" style="padding:10px 12px;font-size:.76rem;line-height:1.8">
+    本期应还：<b>${fmt(Math.round(p.total))}</b> 元（本金 ${fmt(Math.round(p.prin))} + 利息 ${fmt(Math.round(p.int))}）
+    ${estPen>0?`<br>逾期违约金估算：<b class="loss">${fmt(Math.round(estPen))}</b> 元（剩余本金×${L.penalty}%/天×${daysLate}天）`:''}
+    <br>还款按 <b class="honey">违约金 → 利息 → 本金</b> 顺序抵扣</div>
+    <div class="grid2">
+      <div class="field"><div class="fl">实还日期</div><input id="pDate" type="date" value="${today}"></div>
+      <div class="field"><div class="fl">冲抵期数</div><select id="pIdx">${plan.map((x,i)=>
+        `<option value="${i}" ${i===idx?'selected':''}>第${i+1}期</option>`).join('')}</select></div></div>
+    <div class="field"><div class="fl">实还总金额（元）</div><input id="pAmt" type="number" step="any" value="${(p.total+estPen).toFixed(2)}"></div>
+    <div class="field"><div class="fl">备注</div><input id="pNote" placeholder="微信/银行转账等"></div>
+    <button class="btn" style="width:100%" id="pSave">确认登记（自动拆分违约金→利息→本金）</button>
+    <button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">取消</button>`);
+  $('#pSave').onclick=()=>{
+    const amt=Number($('#pAmt').value)||0,pi=Number($('#pIdx').value);
+    const target=plan[pi];
+    let left=amt;
+    const days=Math.max(0,Math.round((new Date($('#pDate').value)-new Date(target.due))/864e5));
+    const maxPen=days>0&&L.penalty?loanRemaining(L)*(L.penalty/100)*days:0;
+    const pen=Math.min(left,maxPen);left-=pen;
+    const int=Math.min(left,target.int);left-=int;
+    const prin=Math.min(left,target.prin+1e7);left-=prin;
+    L.payments.push({date:$('#pDate').value,dueIdx:pi,amount:amt,
+      penalty:Math.round(pen*100)/100,int:Math.round(int*100)/100,prin:Math.round(prin*100)/100,
+      note:$('#pNote').value.trim()});
+    L.payments.sort((a,b)=>a.dueIdx-b.dueIdx);
+    save();closeModal();
+  };
+}
+
+/* ================= 事件绑定 ================= */
+function bind(){
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{curCat=b.dataset.cat;render()});
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>itemForm(curCat,b.dataset.edit));
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    if(confirm('确定删除这条记录？')){db.items=db.items.filter(x=>x.id!==b.dataset.del);save()}});
+  document.querySelectorAll('[data-loan-detail]').forEach(b=>b.onclick=()=>loanDetail(b.dataset.loanDetail));
+  document.querySelectorAll('[data-loan-pay]').forEach(b=>b.onclick=()=>loanPayForm(b.dataset.loanPay));
+  document.querySelectorAll('[data-loan-del]').forEach(b=>b.onclick=()=>{
+    if(confirm('删除整笔借贷及其还款记录？')){db.loans=db.loans.filter(x=>x.id!==b.dataset.loanDel);save()}});
+  document.querySelectorAll('[data-pay-del]').forEach(b=>b.onclick=()=>{
+    const L=db.loans.find(x=>x.id===b.dataset.loan);
+    L.payments.splice(Number(b.dataset.payDel),1);
+    save();loanDetail(L.id);
+    if(tab==='loans')render()});
+  const fa=$('#fxAuto');
+  if(fa)fa.onclick=async()=>{
+    fa.textContent='获取中…';
+    try{
+      const r=await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY,HKD');
+      const j=await r.json();
+      db.set.fx.USD=j.rates.CNY;
+      db.set.fx.HKD=j.rates.CNY/j.rates.HKD;
+      save();alert('已更新：USD '+db.set.fx.USD+' / HKD '+db.set.fx.HKD.toFixed(3));
+    }catch(e){fa.textContent='获取失败，手动填'}
+  };
+  const ls=$('#lockSet');
+  if(ls)ls.onclick=async()=>{
+    const v=$('#lockNew').value.trim();
+    if(!/^\d{4,8}$/.test(v)){alert('请输入4-8位数字');return}
+    const h=await sha(v);
+    if(db.set.lock&&await sha(v)!==db.set.lock){alert('原密码不正确');return}
+    db.set.lock=h;save();alert('应用锁已设置');
+  };
+  const lo=$('#lockOff');
+  if(lo)lo.onclick=async()=>{
+    const v=prompt('输入当前密码以取消应用锁');
+    if(v&&await sha(v)===db.set.lock){db.set.lock='';save()}
+    else if(v!==null)alert('密码不正确');
+  };
+  const ex=$('#exp');
+  if(ex)ex.onclick=()=>{
+    const blob=new Blob([JSON.stringify(db,null,1)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='资产管家备份_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click()};
+  const im=$('#imp');
+  if(im)im.onclick=()=>{
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=()=>{const f=inp.files[0];if(!f)return;
+      const rd=new FileReader();
+      rd.onload=()=>{try{const d=JSON.parse(rd.result);
+        if(!d.items||!d.loans)throw 0;
+        if(confirm('导入将覆盖当前全部数据，确定？')){db=d;save();alert('导入成功')}}catch(e){alert('文件格式不对')}};
+      rd.readAsText(f)};
+    inp.click()};
+  const f1=$('#fxUSD');
+  if(f1)f1.onchange=()=>{db.set.fx.USD=Number(f1.value)||7.12;db.set.fx.HKD=Number($('#fxHKD').value)||0.915;save()};
+}
+
+/* ================= 锁 / 初始化 ================= */
+async function sha(t){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('am:'+t));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function checkLock(){
+  if(!db.set.lock)return;
+  $('#lock').classList.add('show');$('#lockTip').textContent='输入应用锁密码';
+  await new Promise(res=>{
+    $('#lockGo').onclick=async()=>{
+      if(await sha($('#lockPwd').value.trim())===db.set.lock){
+        $('#lock').classList.remove('show');res()}
+      else{$('#lockTip').textContent='密码不对，再试一次';$('#lockPwd').value=''}};
+  });
+}
+$('#btnFx').onclick=()=>{tab='set';render()};
+$('#fab').onclick=()=>{ if(tab==='loans')loanForm(); else itemForm(curCat); };
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+  tab=b.dataset.t;
+  $('#fab').style.display=(tab==='assets'||tab==='loans')?'block':'none';
+  render();
+});
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
+(async()=>{
+  await checkLock();
+  render();
+})();
+</script>
+</body>
+</html>
